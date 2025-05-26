@@ -44,41 +44,51 @@ export function SignatureEditor({ onSave, className }: SignatureEditorProps) {
     return ctx;
   };
 
-  const generateSignatureImage = useCallback((text: string, font: SignatureFont, size: number = fontSize): string => {
-    const canvas = document.createElement('canvas');
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = 800 * dpr;
-    canvas.height = 300 * dpr;
-    canvas.style.width = '800px';
-    canvas.style.height = '300px';
-    
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.scale(dpr, dpr);
-      ctx.fillStyle = color;
-      ctx.font = `${size}px ${font.fontFamily}`;
-      ctx.textBaseline = 'middle';
+  const generateSignatureImage = useCallback((text: string, font: SignatureFont, size: number = fontSize): Promise<string> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = 800 * dpr;
+      canvas.height = 300 * dpr;
+      canvas.style.width = '800px';
+      canvas.style.height = '300px';
       
-      // Enable text rendering optimization
-      ctx.textRendering = 'optimizeLegibility';
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      
-      // Center the text
-      const textMetrics = ctx.measureText(text);
-      const x = (800 - textMetrics.width) / 2;
-      const y = 150;
-      
-      // Add a slight slant for more signature-like appearance
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(-Math.PI / 60);
-      ctx.fillText(text, 0, 0);
-      ctx.restore();
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.scale(dpr, dpr);
+        ctx.fillStyle = color;
+        ctx.font = `${size}px ${font.fontFamily}`;
+        ctx.textBaseline = 'middle';
+        
+        // Enable text rendering optimization
+        ctx.textRendering = 'optimizeLegibility';
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        // Center the text
+        const textMetrics = ctx.measureText(text);
+        const x = (800 - textMetrics.width) / 2;
+        const y = 150;
+        
+        // Add a slight slant for more signature-like appearance
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(-Math.PI / 60);
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
 
-      return canvas.toDataURL('image/png', 1.0); // Use maximum quality
-    }
-    return '';
+        // Create a temporary image to ensure the data URL is properly generated
+        const img = new Image();
+        img.onload = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png', 1.0));
+        };
+        img.src = canvas.toDataURL('image/png', 1.0);
+      } else {
+        resolve('');
+      }
+    });
   }, [color, fontSize]);
 
   const clear = () => {
@@ -154,35 +164,61 @@ export function SignatureEditor({ onSave, className }: SignatureEditorProps) {
     setShowColorPicker(false); // Auto-close after selection
   };
 
-  const save = () => {
-    if (mode === 'draw') {
-      if (signaturePadRef.current?.isEmpty()) {
-        alert('Please provide a signature');
-        return;
-      }
-      const dataUrl = signaturePadRef.current?.getTrimmedCanvas().toDataURL('image/png');
-      if (dataUrl) {
+  const save = async () => {
+    try {
+      if (mode === 'draw') {
+        if (!signaturePadRef.current || signaturePadRef.current.isEmpty()) {
+          alert('Please provide a signature');
+          return;
+        }
+        // Get a trimmed and high-quality PNG of the signature
+        const canvas = signaturePadRef.current.getTrimmedCanvas();
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+        }
+        const dataUrl = canvas.toDataURL('image/png', 1.0);
         onSave(dataUrl);
-      }
-    } else if (mode === 'type' && typedSignature) {
-      const signatureImage = generateSignatureImage(typedSignature, selectedFont);
-      onSave(signatureImage);
-    } else if (mode === 'upload' && uploadedSignature) {
-      // Create a canvas to maintain the resized dimensions
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
+      } else if (mode === 'type' && typedSignature) {
+        const signatureImage = await generateSignatureImage(typedSignature, selectedFont);
+        if (!signatureImage) {
+          throw new Error('Failed to generate signature image');
+        }
+        onSave(signatureImage);
+      } else if (mode === 'upload' && uploadedSignature) {
+        // Create a canvas to maintain the resized dimensions
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          throw new Error('Failed to get canvas context');
+        }
+
         canvas.width = uploadedSignature.width;
         canvas.height = uploadedSignature.height;
         
-        const img = new Image();
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0, uploadedSignature.width, uploadedSignature.height);
-          const resizedDataUrl = canvas.toDataURL('image/png');
-          onSave(resizedDataUrl);
-        };
-        img.src = uploadedSignature.dataUrl;
+        // Enable high-quality image processing
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // Create a promise to handle image loading and processing
+        await new Promise<void>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            ctx.drawImage(img, 0, 0, uploadedSignature.width, uploadedSignature.height);
+            const resizedDataUrl = canvas.toDataURL('image/png', 1.0);
+            onSave(resizedDataUrl);
+            resolve();
+          };
+          img.onerror = () => reject(new Error('Failed to load uploaded signature'));
+          img.src = uploadedSignature.dataUrl;
+        });
+      } else {
+        throw new Error('Please provide a signature');
       }
+    } catch (error) {
+      console.error('Error saving signature:', error);
+      alert(error instanceof Error ? error.message : 'Error saving signature. Please try again.');
     }
   };
 
