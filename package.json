@@ -1,0 +1,41 @@
+{
+  "name": "digital-signature-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@fontsource/alex-brush": "^5.0.8",
+    "@fontsource/dancing-script": "^5.0.16",
+    "@fontsource/great-vibes": "^5.0.8",
+    "@fontsource/mr-de-haviland": "^5.0.8",
+    "@fontsource/parisienne": "^5.0.8",
+    "@heroicons/react": "^2.1.1",
+    "autoprefixer": "^10.4.0",
+    "clsx": "^2.0.0",
+    "date-fns": "^2.30.0",
+    "next": "^14.0.0",
+    "pdf-lib": "^1.17.1",
+    "postcss": "^8.4.0",
+    "react": "^18.2.0",
+    "react-colorful": "^5.6.1",
+    "react-dom": "^18.2.0",
+    "react-draggable": "^4.4.6",
+    "react-pdf": "^7.7.0",
+    "react-rnd": "^10.5.2",
+    "react-signature-canvas": "^1.0.6",
+    "tailwind-merge": "^2.2.0",
+    "tailwindcss": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/react-pdf": "^7.0.0",
+    "@types/react-signature-canvas": "^1.0.5",
+    "typescript": "^5.0.0"
+  }
+}

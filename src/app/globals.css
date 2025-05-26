@@ -1,0 +1,343 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import '@fontsource/dancing-script';
+@import '@fontsource/great-vibes';
+@import '@fontsource/parisienne';
+@import '@fontsource/alex-brush';
+@import '@fontsource/mr-de-haviland';
+@import '@fontsource/allura';
+@import '@fontsource/pinyon-script';
+@import '@fontsource/rouge-script';
+@import '@fontsource/tangerine';
+@import '@fontsource/yellowtail';
+@import '@fontsource/sacramento';
+@import '@fontsource/petit-formal-script';
+@import '@fontsource/herr-von-muellerhoff';
+@import '@fontsource/lovers-quarrel';
+@import '@fontsource/miss-fajardose';
+@import '@fontsource/monsieur-la-doulaise';
+@import '@fontsource/mrs-saint-delafield';
+@import '@fontsource/ruthie';
+@import '@fontsource/stalemate';
+@import '@fontsource/dr-sugiyama';
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 243, 244, 246;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+}
+
+.font-dancing-script {
+  font-family: 'Dancing Script', cursive;
+}
+
+.font-great-vibes {
+  font-family: 'Great Vibes', cursive;
+}
+
+.font-parisienne {
+  font-family: 'Parisienne', cursive;
+}
+
+.font-alex-brush {
+  font-family: 'Alex Brush', cursive;
+}
+
+.font-mr-de-haviland {
+  font-family: 'Mr De Haviland', cursive;
+}
+
+.font-allura {
+  font-family: 'Allura', cursive;
+}
+
+.font-pinyon-script {
+  font-family: 'Pinyon Script', cursive;
+}
+
+.font-rouge-script {
+  font-family: 'Rouge Script', cursive;
+}
+
+.font-tangerine {
+  font-family: 'Tangerine', cursive;
+}
+
+.font-yellowtail {
+  font-family: 'Yellowtail', cursive;
+}
+
+.font-sacramento {
+  font-family: 'Sacramento', cursive;
+}
+
+.font-petit-formal-script {
+  font-family: 'Petit Formal Script', cursive;
+}
+
+.font-herr-von-muellerhoff {
+  font-family: 'Herr Von Muellerhoff', cursive;
+}
+
+.font-lovers-quarrel {
+  font-family: 'Lovers Quarrel', cursive;
+}
+
+.font-miss-fajardose {
+  font-family: 'Miss Fajardose', cursive;
+}
+
+.font-monsieur-la-doulaise {
+  font-family: 'Monsieur La Doulaise', cursive;
+}
+
+.font-mrs-saint-delafield {
+  font-family: 'Mrs Saint Delafield', cursive;
+}
+
+.font-ruthie {
+  font-family: 'Ruthie', cursive;
+}
+
+.font-stalemate {
+  font-family: 'Stalemate', cursive;
+}
+
+.font-dr-sugiyama {
+  font-family: 'Dr Sugiyama', cursive;
+}
+
+/* PDF Editor Styles */
+.pdf-editor {
+  position: relative;
+  min-height: 842px;
+  background: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.signature-preview {
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.signature-preview:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.signature-styles-container {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 10px;
+  margin-right: -10px;
+  scrollbar-width: thin;
+  padding-bottom: 80px;
+  margin-bottom: -80px;
+}
+
+.signature-styles-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.signature-styles-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.signature-styles-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.signature-styles-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.signature-editor-footer {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 1rem 0;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 1rem;
+  z-index: 50;
+}
+
+.pdf-container {
+  position: relative;
+  min-height: 842px;
+  background: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+}
+
+.pdf-page-container {
+  position: relative;
+  display: inline-block;
+}
+
+.draggable-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.draggable-overlay > * {
+  pointer-events: auto;
+}
+
+.signature-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: move;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: white;
+  border: 2px solid #0066cc;
+  border-radius: 50%;
+  z-index: 30;
+}
+
+.signature-controls {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 30;
+}
+
+.signature-container:hover .signature-controls {
+  opacity: 1;
+}
+
+.draggable-item {
+  position: absolute;
+  cursor: move;
+  user-select: none;
+  pointer-events: auto;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.draggable-item:hover {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.draggable-item .delete-button {
+  opacity: 0;
+  transition: opacity 0.2s;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.draggable-item:hover .delete-button {
+  opacity: 1;
+}
+
+/* Primary color */
+.bg-primary {
+  background-color: #2563eb;
+}
+
+.hover\:bg-primary\/90:hover {
+  background-color: rgba(37, 99, 235, 0.9);
+}
+
+.text-primary {
+  color: #2563eb;
+} 
