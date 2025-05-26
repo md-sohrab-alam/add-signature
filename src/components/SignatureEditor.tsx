@@ -19,6 +19,19 @@ interface UploadedSignature {
   aspectRatio: number;
 }
 
+function getContrastColor(hexcolor: string): string {
+  // Convert hex to RGB
+  const r = parseInt(hexcolor.slice(1, 3), 16);
+  const g = parseInt(hexcolor.slice(3, 5), 16);
+  const b = parseInt(hexcolor.slice(5, 7), 16);
+  
+  // Calculate relative luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  
+  // Return black or white based on luminance
+  return luminance > 0.5 ? '#000000' : '#FFFFFF';
+}
+
 export function SignatureEditor({ onSave, className }: SignatureEditorProps) {
   const [mode, setMode] = useState<SignatureMode>('draw');
   const [typedSignature, setTypedSignature] = useState('');
@@ -28,6 +41,7 @@ export function SignatureEditor({ onSave, className }: SignatureEditorProps) {
   const [fontSize, setFontSize] = useState(48);
   const [uploadedSignature, setUploadedSignature] = useState<UploadedSignature | null>(null);
   const [maintainAspectRatio, setMaintainAspectRatio] = useState(true);
+
   const signaturePadRef = useRef<SignaturePad>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -166,28 +180,31 @@ export function SignatureEditor({ onSave, className }: SignatureEditorProps) {
 
   const save = async () => {
     try {
+      let signatureDataUrl = '';
+      
       if (mode === 'draw') {
         if (!signaturePadRef.current || signaturePadRef.current.isEmpty()) {
           alert('Please provide a signature');
           return;
         }
-        // Get a trimmed and high-quality PNG of the signature
         const canvas = signaturePadRef.current.getTrimmedCanvas();
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
         }
-        const dataUrl = canvas.toDataURL('image/png', 1.0);
-        onSave(dataUrl);
-      } else if (mode === 'type' && typedSignature) {
+        signatureDataUrl = canvas.toDataURL('image/png', 1.0);
+      } else if (mode === 'type') {
+        if (!typedSignature.trim()) {
+          alert('Please type your signature');
+          return;
+        }
         const signatureImage = await generateSignatureImage(typedSignature, selectedFont);
         if (!signatureImage) {
           throw new Error('Failed to generate signature image');
         }
-        onSave(signatureImage);
+        signatureDataUrl = signatureImage;
       } else if (mode === 'upload' && uploadedSignature) {
-        // Create a canvas to maintain the resized dimensions
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (!ctx) {
@@ -197,17 +214,14 @@ export function SignatureEditor({ onSave, className }: SignatureEditorProps) {
         canvas.width = uploadedSignature.width;
         canvas.height = uploadedSignature.height;
         
-        // Enable high-quality image processing
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
 
-        // Create a promise to handle image loading and processing
         await new Promise<void>((resolve, reject) => {
           const img = new Image();
           img.onload = () => {
             ctx.drawImage(img, 0, 0, uploadedSignature.width, uploadedSignature.height);
-            const resizedDataUrl = canvas.toDataURL('image/png', 1.0);
-            onSave(resizedDataUrl);
+            signatureDataUrl = canvas.toDataURL('image/png', 1.0);
             resolve();
           };
           img.onerror = () => reject(new Error('Failed to load uploaded signature'));
@@ -216,6 +230,8 @@ export function SignatureEditor({ onSave, className }: SignatureEditorProps) {
       } else {
         throw new Error('Please provide a signature');
       }
+
+      onSave(signatureDataUrl);
     } catch (error) {
       console.error('Error saving signature:', error);
       alert(error instanceof Error ? error.message : 'Error saving signature. Please try again.');
@@ -223,271 +239,282 @@ export function SignatureEditor({ onSave, className }: SignatureEditorProps) {
   };
 
   return (
-    <div className={cn("bg-white rounded-xl shadow-sm p-6", className)}>
-      <div className="flex gap-4 mb-6">
-        <button
-          onClick={() => setMode('draw')}
-          className={cn(
-            "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors",
-            mode === 'draw' ? "bg-primary text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-          )}
-        >
-          Draw
-        </button>
-        <button
-          onClick={() => setMode('type')}
-          className={cn(
-            "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors",
-            mode === 'type' ? "bg-primary text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-          )}
-        >
-          Type
-        </button>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className={cn(
-            "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors",
-            mode === 'upload' ? "bg-primary text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-          )}
-        >
-          Upload
-        </button>
-      </div>
-
-      <div className="mb-4">
-        <div className="flex items-center gap-4 mb-2">
-          <div className="relative">
-            <label className="text-sm font-medium text-gray-700">Signature Color</label>
-            <div className="flex items-center gap-2 mt-1">
-              <button
-                onClick={() => setShowColorPicker(!showColorPicker)}
-                className="w-8 h-8 rounded border"
-                style={{ backgroundColor: color }}
-              />
-              {showColorPicker && (
-                <div className="absolute z-10 mt-2">
-                  <div className="fixed inset-0" onClick={() => setShowColorPicker(false)} />
-                  <div className="relative">
-                    <HexColorPicker color={color} onChange={handleColorChange} />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          {mode === 'type' && (
-            <div className="flex-1">
-              <label className="text-sm font-medium text-gray-700">Font Size</label>
-              <input
-                type="range"
-                min="24"
-                max="72"
-                value={fontSize}
-                onChange={(e) => setFontSize(Number(e.target.value))}
-                className="w-full mt-1"
-              />
-              <div className="text-xs text-gray-500 mt-1 text-center">{fontSize}px</div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {mode === 'draw' && (
-        <div className="border rounded-lg p-4">
-          <SignaturePad
-            ref={signaturePadRef}
-            canvasProps={{
-              className: "w-full h-[200px] border rounded-lg bg-white",
-              style: { 
-                width: '100%', 
-                height: '200px',
-                backgroundColor: 'white',
-                touchAction: 'none'
-              }
-            }}
-            penColor={color}
-            dotSize={2}
-            minWidth={1.5}
-            maxWidth={3}
-            throttle={16}
-            velocityFilterWeight={0.7}
-          />
-        </div>
-      )}
-
-      {mode === 'type' && (
+    <div className={cn("p-6", className)}>
+      <div className="space-y-8">
+        {/* Signature Mode Selection */}
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Type your signature
-            </label>
-            <div className="relative w-full h-[100px] border rounded-lg overflow-hidden">
-              <input
-                type="text"
-                value={typedSignature}
-                onChange={(e) => setTypedSignature(e.target.value)}
-                className={cn(
-                  "w-full h-full px-4 focus:ring-2 focus:ring-primary focus:border-transparent text-center bg-white",
-                  selectedFont.className
-                )}
-                style={{ 
-                  fontSize: `${fontSize}px`, 
-                  color,
-                  lineHeight: '100px'
-                }}
-                placeholder="Type your name"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                  }
-                }}
-              />
-            </div>
+          <h3 className="text-lg font-semibold text-gray-800">Choose How to Add Your Signature</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <button
+              onClick={() => setMode('draw')}
+              className={cn(
+                "flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200",
+                mode === 'draw' 
+                  ? "bg-primary text-white shadow-lg scale-[1.02]" 
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              )}
+            >
+              <svg className="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              <span className="font-medium">Draw</span>
+              <span className="text-xs mt-1 opacity-80">Use your mouse or touch</span>
+            </button>
+            <button
+              onClick={() => setMode('type')}
+              className={cn(
+                "flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200",
+                mode === 'type'
+                  ? "bg-primary text-white shadow-lg scale-[1.02]"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              )}
+            >
+              <svg className="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+              </svg>
+              <span className="font-medium">Type</span>
+              <span className="text-xs mt-1 opacity-80">Choose from styles</span>
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                "flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200",
+                mode === 'upload'
+                  ? "bg-primary text-white shadow-lg scale-[1.02]"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              )}
+            >
+              <svg className="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              <span className="font-medium">Upload</span>
+              <span className="text-xs mt-1 opacity-80">Use image file</span>
+            </button>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Choose a style
-            </label>
-            <div className="h-[300px] overflow-y-auto rounded-lg border border-gray-200">
-              <div className="space-y-2 p-2">
-                {signatureFonts.map((font) => (
-                  <button
-                    key={font.name}
-                    onClick={() => setSelectedFont(font)}
-                    className={cn(
-                      "w-full p-4 border rounded-lg hover:bg-gray-50 transition-colors",
-                      selectedFont.name === font.name ? "border-primary ring-2 ring-primary" : "border-gray-200",
-                      font.className
-                    )}
-                  >
-                    <div
-                      className="text-center"
-                      style={{ 
-                        color,
-                        fontSize: `${fontSize}px`,
-                        lineHeight: '1.2',
-                        transform: 'rotate(-2deg)'
-                      }}
-                    >
-                      {typedSignature || 'Preview'}
+        </div>
+
+        {/* Signature Style Options */}
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-6">
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Signature Color
+              </label>
+              <div className="relative">
+                <button
+                  onClick={() => setShowColorPicker(!showColorPicker)}
+                  className="w-full h-10 rounded-lg border border-gray-300 flex items-center gap-2 px-3 hover:border-primary transition-colors"
+                  style={{ backgroundColor: color }}
+                >
+                  <div className="w-6 h-6 rounded border shadow-sm" style={{ backgroundColor: color }} />
+                  <span className="text-sm" style={{ color: getContrastColor(color) }}>
+                    {color.toUpperCase()}
+                  </span>
+                </button>
+                {showColorPicker && (
+                  <div className="absolute z-10 mt-2">
+                    <div className="fixed inset-0" onClick={() => setShowColorPicker(false)} />
+                    <div className="relative">
+                      <div className="absolute p-3 bg-white rounded-lg shadow-xl border">
+                        <HexColorPicker color={color} onChange={handleColorChange} />
+                      </div>
                     </div>
-                  </button>
-                ))}
+                  </div>
+                )}
               </div>
             </div>
+
+            {mode === 'type' && (
+              <div className="flex-1 min-w-[200px]">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Font Size
+                </label>
+                <div className="space-y-2">
+                  <input
+                    type="range"
+                    min="24"
+                    max="72"
+                    value={fontSize}
+                    onChange={(e) => setFontSize(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>24px</span>
+                    <span>{fontSize}px</span>
+                    <span>72px</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      {mode === 'upload' && uploadedSignature && (
+        {/* Signature Input Area */}
         <div className="space-y-4">
-          <div className="relative border rounded-lg p-4 min-h-[300px]" ref={containerRef}>
-            <Rnd
-              default={{
-                x: 0,
-                y: 0,
-                width: uploadedSignature.width,
-                height: uploadedSignature.height,
-              }}
-              minWidth={50}
-              minHeight={50}
-              lockAspectRatio={maintainAspectRatio}
-              bounds="parent"
-              onResizeStop={handleResizeStop}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'white',
-              }}
-              resizeHandleStyles={{
-                bottomRight: {
-                  width: '12px',
-                  height: '12px',
-                  right: '-6px',
-                  bottom: '-6px',
-                  cursor: 'se-resize',
-                  backgroundColor: 'white',
-                  border: '2px solid #0066cc',
-                  borderRadius: '50%',
-                },
-                topLeft: {
-                  width: '12px',
-                  height: '12px',
-                  left: '-6px',
-                  top: '-6px',
-                  cursor: 'nw-resize',
-                  backgroundColor: 'white',
-                  border: '2px solid #0066cc',
-                  borderRadius: '50%',
-                },
-                topRight: {
-                  width: '12px',
-                  height: '12px',
-                  right: '-6px',
-                  top: '-6px',
-                  cursor: 'ne-resize',
-                  backgroundColor: 'white',
-                  border: '2px solid #0066cc',
-                  borderRadius: '50%',
-                },
-                bottomLeft: {
-                  width: '12px',
-                  height: '12px',
-                  left: '-6px',
-                  bottom: '-6px',
-                  cursor: 'sw-resize',
-                  backgroundColor: 'white',
-                  border: '2px solid #0066cc',
-                  borderRadius: '50%',
-                },
-              }}
-            >
-              <img
-                src={uploadedSignature.dataUrl}
-                alt="Uploaded signature"
-                className="w-full h-full object-contain"
-                draggable={false}
+          {mode === 'draw' && (
+            <div className="border-2 rounded-xl p-4 bg-white shadow-sm">
+              <div className="text-center mb-4">
+                <h4 className="font-medium text-gray-700">Draw Your Signature</h4>
+                <p className="text-sm text-gray-500">Use your mouse or touch to sign</p>
+              </div>
+              <SignaturePad
+                ref={signaturePadRef}
+                canvasProps={{
+                  className: "w-full h-[200px] border rounded-lg bg-white",
+                  style: { 
+                    width: '100%', 
+                    height: '200px',
+                    backgroundColor: 'white',
+                    touchAction: 'none'
+                  }
+                }}
+                penColor={color}
+                dotSize={2}
+                minWidth={1.5}
+                maxWidth={3}
+                throttle={16}
+                velocityFilterWeight={0.7}
               />
-            </Rnd>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="maintainAspectRatio"
-              checked={maintainAspectRatio}
-              onChange={(e) => setMaintainAspectRatio(e.target.checked)}
-              className="rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <label htmlFor="maintainAspectRatio" className="text-sm text-gray-600">
-              Maintain aspect ratio
-            </label>
+            </div>
+          )}
+
+          {mode === 'type' && (
+            <div className="space-y-6">
+              <div className="border-2 rounded-xl p-4 bg-white shadow-sm">
+                <div className="text-center mb-4">
+                  <h4 className="font-medium text-gray-700">Type Your Signature</h4>
+                  <p className="text-sm text-gray-500">Enter your name to preview in different styles</p>
+                </div>
+                <input
+                  type="text"
+                  value={typedSignature}
+                  onChange={(e) => setTypedSignature(e.target.value)}
+                  className="w-full h-[100px] px-4 rounded-lg border-2 border-gray-200 focus:border-primary focus:ring-0 text-center bg-white transition-colors"
+                  style={{ 
+                    fontSize: `${fontSize}px`, 
+                    color,
+                    fontFamily: selectedFont.fontFamily,
+                    lineHeight: '100px'
+                  }}
+                  placeholder="Type your name"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="border-2 rounded-xl p-4 bg-white shadow-sm">
+                <div className="text-center mb-4">
+                  <h4 className="font-medium text-gray-700">Choose a Style</h4>
+                  <p className="text-sm text-gray-500">Select from available signature styles</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto p-2">
+                  {signatureFonts.map((font) => (
+                    <button
+                      key={font.name}
+                      onClick={() => setSelectedFont(font)}
+                      className={cn(
+                        "p-4 border-2 rounded-xl hover:bg-gray-50 transition-all duration-200",
+                        selectedFont.name === font.name 
+                          ? "border-primary ring-2 ring-primary/20" 
+                          : "border-gray-200"
+                      )}
+                    >
+                      <div
+                        className={cn("text-center", font.className)}
+                        style={{ 
+                          color,
+                          fontSize: `${fontSize * 0.7}px`,
+                          lineHeight: '1.2',
+                          transform: 'rotate(-2deg)'
+                        }}
+                      >
+                        {typedSignature || 'Preview'}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {mode === 'upload' && uploadedSignature && (
+            <div className="border-2 rounded-xl p-4 bg-white shadow-sm">
+              <div className="text-center mb-4">
+                <h4 className="font-medium text-gray-700">Adjust Your Signature</h4>
+                <p className="text-sm text-gray-500">Resize and position as needed</p>
+              </div>
+              <div className="relative min-h-[300px]" ref={containerRef}>
+                <Rnd
+                  default={{
+                    x: 0,
+                    y: 0,
+                    width: uploadedSignature.width,
+                    height: uploadedSignature.height,
+                  }}
+                  minWidth={50}
+                  minHeight={50}
+                  lockAspectRatio={maintainAspectRatio}
+                  bounds="parent"
+                  onResizeStop={handleResizeStop}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'white',
+                  }}
+                >
+                  <img
+                    src={uploadedSignature.dataUrl}
+                    alt="Uploaded signature"
+                    className="w-full h-full object-contain"
+                    draggable={false}
+                  />
+                </Rnd>
+              </div>
+              <div className="flex items-center gap-2 mt-4 justify-center">
+                <input
+                  type="checkbox"
+                  id="maintainAspectRatio"
+                  checked={maintainAspectRatio}
+                  onChange={(e) => setMaintainAspectRatio(e.target.checked)}
+                  className="rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <label htmlFor="maintainAspectRatio" className="text-sm text-gray-600">
+                  Maintain aspect ratio
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="sticky bottom-0 bg-white pt-4 mt-6 border-t">
+          <div className="flex gap-3">
+            <button
+              onClick={clear}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+            >
+              Clear
+            </button>
+            <button
+              onClick={save}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+            >
+              Save
+            </button>
           </div>
         </div>
-      )}
 
-      <input
-        type="file"
-        ref={fileInputRef}
-        className="hidden"
-        accept="image/png,image/jpeg,image/svg+xml"
-        onChange={handleUpload}
-      />
-
-      <div className="mt-6">
-        <div className="flex gap-2">
-          <button
-            onClick={clear}
-            className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-          >
-            Clear
-          </button>
-          <button
-            onClick={save}
-            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-          >
-            Save
-          </button>
-        </div>
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept="image/png,image/jpeg,image/svg+xml"
+          onChange={handleUpload}
+        />
       </div>
     </div>
   );
