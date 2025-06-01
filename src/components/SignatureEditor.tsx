@@ -38,7 +38,7 @@ export function SignatureEditor({ onSave, className }: SignatureEditorProps) {
   const [selectedFont, setSelectedFont] = useState<SignatureFont>(signatureFonts[0]);
   const [color, setColor] = useState('#000000');
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [fontSize, setFontSize] = useState(48);
+  const [fontSize, setFontSize] = useState(72);
   const [uploadedSignature, setUploadedSignature] = useState<UploadedSignature | null>(null);
   const [maintainAspectRatio, setMaintainAspectRatio] = useState(true);
 
@@ -62,27 +62,43 @@ export function SignatureEditor({ onSave, className }: SignatureEditorProps) {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas');
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = 800 * dpr;
-      canvas.height = 300 * dpr;
-      canvas.style.width = '800px';
-      canvas.style.height = '300px';
+      canvas.width = 2000 * dpr;  // Further increased canvas width
+      canvas.height = 600 * dpr;  // Further increased canvas height
+      canvas.style.width = '2000px';
+      canvas.style.height = '600px';
       
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.scale(dpr, dpr);
         ctx.fillStyle = color;
-        ctx.font = `${size}px ${font.fontFamily}`;
-        ctx.textBaseline = 'middle';
+
+        // Initial setup with maximum possible font size
+        let currentSize = size;
+        ctx.font = `${currentSize}px ${font.fontFamily}`;
         
         // Enable text rendering optimization
         ctx.textRendering = 'optimizeLegibility';
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         
-        // Center the text
+        // Calculate maximum width with padding
+        const maxWidth = 1800;  // Increased maximum width with padding
         const textMetrics = ctx.measureText(text);
-        const x = (800 - textMetrics.width) / 2;
-        const y = 150;
+        
+        // If text is too wide, scale down the font size
+        if (textMetrics.width > maxWidth) {
+          currentSize = Math.floor((size * maxWidth) / textMetrics.width);
+          // Ensure minimum readable size
+          currentSize = Math.max(currentSize, 24);
+          ctx.font = `${currentSize}px ${font.fontFamily}`;
+        }
+
+        ctx.textBaseline = 'middle';
+        
+        // Get final metrics after potential resizing
+        const finalMetrics = ctx.measureText(text);
+        const x = (2000 - finalMetrics.width) / 2;  // Center horizontally
+        const y = 300;  // Center vertically (half of 600)
         
         // Add a slight slant for more signature-like appearance
         ctx.save();
@@ -332,16 +348,16 @@ export function SignatureEditor({ onSave, className }: SignatureEditorProps) {
                 <div className="space-y-2">
                   <input
                     type="range"
-                    min="24"
-                    max="72"
+                    min="48"
+                    max="96"
                     value={fontSize}
                     onChange={(e) => setFontSize(Number(e.target.value))}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
                   />
                   <div className="flex justify-between text-xs text-gray-500">
-                    <span>24px</span>
+                    <span>48px</span>
                     <span>{fontSize}px</span>
-                    <span>72px</span>
+                    <span>96px</span>
                   </div>
                 </div>
               </div>

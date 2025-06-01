@@ -69,15 +69,17 @@ const DraggableBox = ({ field, onUpdate, onDelete }: {
       }}
       bounds="parent"
       lockAspectRatio={field.maintainAspectRatio}
-      minWidth={100}
-      minHeight={50}
+      minWidth={300}
+      minHeight={100}
       className="draggable-container"
       style={{ 
         position: 'absolute',
         cursor: 'move',
         touchAction: 'none',
         zIndex: 50,
-        background: 'transparent'
+        background: 'transparent',
+        overflow: 'visible',
+        padding: '10px'
       }}
     >
       <div className="relative w-full h-full flex flex-col justify-center select-none">
@@ -85,8 +87,13 @@ const DraggableBox = ({ field, onUpdate, onDelete }: {
           <img
             src={field.content}
             alt="Signature"
-            className="w-auto h-full object-contain pointer-events-none"
-            style={{ maxWidth: '100%' }}
+            className="w-full h-full object-contain pointer-events-none"
+            style={{ 
+              maxWidth: '100%',
+              objectFit: 'contain',
+              objectPosition: 'center',
+              transform: 'scale(0.95)'
+            }}
             draggable={false}
           />
         ) : (
@@ -223,12 +230,12 @@ export default function Home() {
       return;
     }
 
-    const signatureWidth = Math.min(250, pdfDimensions.width * 0.3);
-    const signatureHeight = 70;
-    const padding = 50;
+    const signatureWidth = Math.min(800, pdfDimensions.width * 0.8);
+    const signatureHeight = 250;
+    const padding = 40;
 
-    const defaultX = Math.max(0, (pdfDimensions.width - signatureWidth) / 2);
-    const defaultY = Math.max(0, (pdfDimensions.height - signatureHeight) / 2);
+    const defaultX = Math.max(padding, (pdfDimensions.width - signatureWidth) / 2);
+    const defaultY = Math.max(padding, (pdfDimensions.height - signatureHeight) / 2);
 
     const newField: SignatureField = {
       id: Date.now().toString(),
