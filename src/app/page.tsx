@@ -42,17 +42,38 @@ const DraggableBox = ({ field, onUpdate, onDelete }: {
   onUpdate: (updatedField: SignatureField) => void;
   onDelete: () => void;
 }) => {
+  const [dimensions, setDimensions] = useState({ width: field.width, height: field.height });
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Auto-adjust dimensions based on content
+  useEffect(() => {
+    if (contentRef.current) {
+      const content = contentRef.current;
+      const computedStyle = window.getComputedStyle(content);
+      const newWidth = Math.max(300, content.scrollWidth + 40); // minimum width of 300px
+      const newHeight = Math.max(100, content.scrollHeight + 40); // minimum height of 100px
+
+      if (newWidth !== dimensions.width || newHeight !== dimensions.height) {
+        setDimensions({ width: newWidth, height: newHeight });
+        onUpdate({
+          ...field,
+          width: newWidth,
+          height: newHeight
+        });
+      }
+    }
+  }, [field.content, field.textOptions?.fontSize, field.textOptions?.fontFamily]);
+
   return (
     <Rnd
-      key={field.id}
       default={{
         x: field.position.x,
         y: field.position.y,
-        width: field.width,
-        height: field.height
+        width: dimensions.width,
+        height: dimensions.height
       }}
       position={{ x: field.position.x, y: field.position.y }}
-      size={{ width: field.width, height: field.height }}
+      size={{ width: dimensions.width, height: dimensions.height }}
       onDragStop={(e, d) => {
         onUpdate({
           ...field,
@@ -60,10 +81,13 @@ const DraggableBox = ({ field, onUpdate, onDelete }: {
         });
       }}
       onResizeStop={(e, direction, ref, delta, position) => {
+        const newWidth = parseFloat(ref.style.width);
+        const newHeight = parseFloat(ref.style.height);
+        setDimensions({ width: newWidth, height: newHeight });
         onUpdate({
           ...field,
-          width: parseFloat(ref.style.width),
-          height: parseFloat(ref.style.height),
+          width: newWidth,
+          height: newHeight,
           position: { x: position.x, y: position.y }
         });
       }}
@@ -71,28 +95,64 @@ const DraggableBox = ({ field, onUpdate, onDelete }: {
       lockAspectRatio={field.maintainAspectRatio}
       minWidth={300}
       minHeight={100}
-      className="draggable-container"
-      style={{ 
+      className={cn(
+        "draggable-container group",
+        field.type === 'signature' ? 'cursor-move' : 'cursor-text'
+      )}
+      style={{
         position: 'absolute',
-        cursor: 'move',
         touchAction: 'none',
         zIndex: 50,
-        background: 'transparent',
-        overflow: 'visible',
+        background: 'rgba(255, 255, 255, 0.05)',
+        border: '2px dashed rgba(0, 0, 0, 0.2)',
+        borderRadius: '8px',
+        transition: 'border 0.2s, background 0.2s',
         padding: '10px'
       }}
+      resizeHandleStyles={{
+        bottomRight: {
+          position: 'absolute',
+          width: '20px',
+          height: '20px',
+          background: 'transparent',
+          right: '-10px',
+          bottom: '-10px',
+          cursor: 'se-resize',
+          zIndex: 51
+        }
+      }}
+      resizeHandleComponent={{
+        bottomRight: (
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="text-blue-500 bg-white rounded-full shadow-lg p-1"
+            >
+              <path d="M21 21l-6-6m6 6v-4.8m0 4.8h-4.8" />
+            </svg>
+          </div>
+        )
+      }}
     >
-      <div className="relative w-full h-full flex flex-col justify-center select-none">
+      <div 
+        ref={contentRef}
+        className="relative w-full h-full flex flex-col justify-center select-none group-hover:border-blue-400"
+      >
         {field.type === 'signature' ? (
           <img
             src={field.content}
             alt="Signature"
             className="w-full h-full object-contain pointer-events-none"
-            style={{ 
+            style={{
               maxWidth: '100%',
+              maxHeight: '100%',
               objectFit: 'contain',
-              objectPosition: 'center',
-              transform: 'scale(0.95)'
+              objectPosition: 'center'
             }}
             draggable={false}
           />
@@ -115,10 +175,11 @@ const DraggableBox = ({ field, onUpdate, onDelete }: {
             placeholder="Enter text here..."
           />
         )}
-        <div className="absolute top-0 right-0 flex gap-1 p-1">
+        <div className="absolute top-0 right-0 flex gap-1 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={onDelete}
-            className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+            className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-lg"
+            title="Delete"
           >
             ×
           </button>
@@ -130,7 +191,7 @@ const DraggableBox = ({ field, onUpdate, onDelete }: {
                   maintainAspectRatio: !field.maintainAspectRatio
                 });
               }}
-              className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-blue-600"
+              className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-blue-600 shadow-lg"
               title={field.maintainAspectRatio ? "Unlock aspect ratio" : "Lock aspect ratio"}
             >
               {field.maintainAspectRatio ? "🔒" : "🔓"}
@@ -287,29 +348,37 @@ export default function Home() {
 
     try {
       if (file.type.includes('pdf')) {
+        console.log('Starting PDF processing...');
         const arrayBuffer = await file.arrayBuffer();
         const pdfDoc = await PDFDocument.load(arrayBuffer);
         const pages = pdfDoc.getPages();
         
-        // Get PDF dimensions from the first page
-        const firstPage = pages[0];
-        const { width: pdfWidth, height: pdfHeight } = firstPage.getSize();
-
-        // Get the scale factor between screen and PDF coordinates
-        const pageElement = pageRef.current?.querySelector('.react-pdf__Page');
-        if (!pageElement) {
-          throw new Error('Could not find PDF page element');
+        // Get the PDF viewer element and its dimensions
+        const pdfViewer = pageRef.current?.querySelector('.react-pdf__Page');
+        if (!pdfViewer) {
+          throw new Error('Could not find PDF viewer element');
         }
 
-        const screenWidth = pageElement.clientWidth;
-        const screenHeight = pageElement.clientHeight;
-        const scaleX = pdfWidth / screenWidth;
-        const scaleY = pdfHeight / screenHeight;
+        const viewerRect = pdfViewer.getBoundingClientRect();
+        console.log('PDF Viewer dimensions:', {
+          width: viewerRect.width,
+          height: viewerRect.height
+        });
 
         // Process each page
         for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
           const pdfPage = pages[pageIndex];
+          const { width: pageWidth, height: pageHeight } = pdfPage.getSize();
           
+          console.log('PDF Page dimensions:', {
+            width: pageWidth,
+            height: pageHeight
+          });
+
+          // Calculate scale factors
+          const scaleX = pageWidth / viewerRect.width;
+          const scaleY = pageHeight / viewerRect.height;
+
           // Get all fields for this page
           const pageFields = fields.filter(field => !field.page || field.page === pageIndex + 1);
 
@@ -317,28 +386,41 @@ export default function Home() {
           for (const field of pageFields) {
             try {
               if (field.type === 'signature') {
-                // Handle signature fields
                 const imageData = await fetch(field.content)
                   .then(response => response.arrayBuffer())
-                  .catch(() => {
+                  .catch((error) => {
+                    console.error('Error fetching signature data:', error);
                     throw new Error(`Failed to load signature image for field ${field.id}`);
                   });
 
                 const image = await pdfDoc.embedPng(imageData);
-
-                // Convert screen coordinates and dimensions to PDF coordinates
-                const x = field.position.x * scaleX;
-                const signatureWidth = field.width * scaleX;
-                const signatureHeight = field.height * scaleY;
                 
-                // In PDF coordinates, y=0 is at the bottom, while in screen coordinates, y=0 is at the top
-                const y = pdfHeight - (field.position.y * scaleY) - signatureHeight;
+                // Get original image dimensions
+                const { width: origWidth, height: origHeight } = image.size();
+                
+                // Calculate dimensions preserving the exact preview size
+                const signatureWidth = Math.round(field.width * scaleX);
+                const signatureHeight = Math.round(field.height * scaleY);
+                
+                // Calculate position to match preview exactly
+                const signatureX = Math.round(field.position.x * scaleX);
+                const signatureY = pageHeight - Math.round(field.position.y * scaleY) - signatureHeight;
 
-                pdfPage.drawImage(image, {
-                  x,
-                  y,
+                console.log('Drawing signature with dimensions:', {
                   width: signatureWidth,
-                  height: signatureHeight
+                  height: signatureHeight,
+                  x: signatureX,
+                  y: signatureY,
+                  scale: { scaleX, scaleY }
+                });
+
+                // Draw the signature with exact dimensions
+                pdfPage.drawImage(image, {
+                  x: signatureX,
+                  y: signatureY,
+                  width: signatureWidth,
+                  height: signatureHeight,
+                  opacity: 1
                 });
               } else if (field.type === 'text') {
                 // Handle text fields
@@ -355,19 +437,48 @@ export default function Home() {
                 const textColor = hexToRgb(field.textOptions?.color || '#000000');
 
                 const x = field.position.x * scaleX;
-                const y = pdfHeight - (field.position.y * scaleY) - (fontSize);
+                const y = pageHeight - (field.position.y * scaleY) - (fontSize * 1.2);
 
-                pdfPage.drawText(field.content, {
-                  x,
-                  y,
-                  size: fontSize,
-                  font: font,
-                  color: rgb(textColor.r, textColor.g, textColor.b)
-                });
+                // Split text into words and handle text wrapping
+                const words = field.content.split(' ');
+                const maxWidth = field.width * scaleX;
+                let currentLine = '';
+                let yOffset = 0;
+
+                for (const word of words) {
+                  const testLine = currentLine ? `${currentLine} ${word}` : word;
+                  const textWidth = font.widthOfTextAtSize(testLine, fontSize);
+
+                  if (textWidth <= maxWidth) {
+                    currentLine = testLine;
+                  } else {
+                    // Draw the current line and move to next line
+                    pdfPage.drawText(currentLine, {
+                      x,
+                      y: y - yOffset,
+                      size: fontSize,
+                      font: font,
+                      color: rgb(textColor.r, textColor.g, textColor.b)
+                    });
+                    yOffset += fontSize * 1.2; // Line spacing
+                    currentLine = word;
+                  }
+                }
+
+                // Draw the last line
+                if (currentLine) {
+                  pdfPage.drawText(currentLine, {
+                    x,
+                    y: y - yOffset,
+                    size: fontSize,
+                    font: font,
+                    color: rgb(textColor.r, textColor.g, textColor.b)
+                  });
+                }
               }
-            } catch (error) {
-              console.error(`Error processing field ${field.id}:`, error);
-              throw new Error(`Failed to process field on page ${pageIndex + 1}`);
+            } catch (fieldError: any) {
+              console.error(`Error processing field ${field.id}:`, fieldError);
+              throw new Error(`Failed to process field on page ${pageIndex + 1}: ${fieldError?.message || 'Unknown error'}`);
             }
           }
         }
@@ -439,12 +550,23 @@ export default function Home() {
               await new Promise<void>((resolve, reject) => {
                 signatureImg.onload = () => {
                   console.log('Signature loaded:', field.id);
-                  const x = Math.round(field.position.x * scaleX);
-                  const y = Math.round(field.position.y * scaleY);
+                  // Use exact preview dimensions
                   const width = Math.round(field.width * scaleX);
                   const height = Math.round(field.height * scaleY);
                   
+                  // Match preview position exactly
+                  const x = Math.round(field.position.x * scaleX);
+                  const y = Math.round(field.position.y * scaleY);
+                  
+                  // Optimize rendering quality
+                  ctx.imageSmoothingEnabled = false;
+                  ctx.imageSmoothingQuality = 'high';
+                  
+                  // Draw with exact dimensions from preview
                   ctx.drawImage(signatureImg, x, y, width, height);
+                  
+                  // Reset canvas settings
+                  ctx.imageSmoothingEnabled = true;
                   console.log('Signature drawn:', field.id);
                   resolve();
                 };
