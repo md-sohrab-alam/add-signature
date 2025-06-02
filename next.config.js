@@ -13,10 +13,9 @@ const nextConfig = {
   },
   // Ensure CSS is properly loaded
   transpilePackages: ['@fontsource'],
-  // Ensure proper routing
-  experimental: {
-    appDir: true,
-  },
+  // Ensure proper static file serving
+  distDir: 'dist',
+  cleanDistDir: true,
 }
 
 module.exports = nextConfig 
