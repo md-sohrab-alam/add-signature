@@ -13,6 +13,10 @@ const nextConfig = {
   },
   // Ensure CSS is properly loaded
   transpilePackages: ['@fontsource'],
+  // Ensure proper routing
+  experimental: {
+    appDir: true,
+  },
 }
 
 module.exports = nextConfig 
