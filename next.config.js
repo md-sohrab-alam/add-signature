@@ -4,8 +4,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  assetPrefix: '/add-signature',
-  basePath: '/add-signature',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/add-signature' : '',
+  basePath: process.env.NODE_ENV === 'production' ? '/add-signature' : '',
   trailingSlash: true,
 }
 
