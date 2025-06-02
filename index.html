@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Digital Signature App</title>
     <script>
-      // Check if we're at the root and redirect to the correct path
-      if (window.location.pathname === '/') {
-        window.location.href = '/add-signature/';
-      } else if (window.location.pathname === '/add-signature') {
-        window.location.href = '/add-signature/';
+      // Handle both root and /add-signature paths
+      const path = window.location.pathname;
+      if (path === '/' || path === '/add-signature') {
+        window.location.replace('/add-signature/');
       }
     </script>
-    <meta http-equiv="refresh" content="0;url=/add-signature/">
   </head>
   <body>
-    <p>Loading the Digital Signature App...</p>
+    <script>
+      // Fallback redirect
+      window.location.replace('/add-signature/');
+    </script>
   </body>
 </html> 
