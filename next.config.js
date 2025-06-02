@@ -1,12 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
-  basePath: '/add-signature',
   images: {
     unoptimized: true,
   },
-<<<<<<< Updated upstream
-=======
   // Configure base path and asset prefix for GitHub Pages
   basePath: '/add-signature',
   assetPrefix: '/add-signature/',
@@ -20,7 +17,6 @@ const nextConfig = {
   // Ensure proper static file serving
   distDir: 'dist',
   cleanDistDir: true,
->>>>>>> Stashed changes
 }
 
 module.exports = nextConfig 
