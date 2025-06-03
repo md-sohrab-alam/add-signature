@@ -4,16 +4,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  basePath: '/add-signature',
-  assetPrefix: '/add-signature/',
+  basePath: '',
+  assetPrefix: '',
   trailingSlash: true,
-  distDir: 'out',
-  // Fix CSS loading in production
-  compiler: {
-    removeConsole: false,
-  },
-  // Ensure CSS is properly loaded
-  transpilePackages: ['@fontsource'],
 }
 
 module.exports = nextConfig 
