@@ -4,13 +4,13 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/add-signature' : '',
-  basePath: process.env.NODE_ENV === 'production' ? '/add-signature' : '',
+  basePath: '/add-signature',
+  assetPrefix: '/add-signature/',
   trailingSlash: true,
   distDir: 'out',
   // Fix CSS loading in production
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    removeConsole: false,
   },
   // Ensure CSS is properly loaded
   transpilePackages: ['@fontsource'],
