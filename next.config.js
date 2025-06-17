@@ -17,6 +17,20 @@ const nextConfig = {
   // Ensure proper static file serving
   poweredByHeader: false,
   reactStrictMode: true,
+  // Handle canvas module
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        canvas: false,
+      };
+    }
+    config.module.rules.push({
+      test: /node_modules\/canvas/,
+      use: 'null-loader'
+    });
+    return config;
+  },
 }
 
 module.exports = nextConfig 
