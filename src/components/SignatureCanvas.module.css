@@ -1,0 +1,17 @@
+.signatureContainer {
+  position: relative;
+  width: 100%;
+}
+
+.signaturePad {
+  width: 100%;
+  height: 200px;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  touch-action: none;
+}
+
+.signaturePad canvas {
+  width: 100% !important;
+  height: 100% !important;
+} 

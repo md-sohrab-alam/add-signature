@@ -1,6 +1,7 @@
-import { useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import SignaturePad from 'react-signature-canvas';
 import { cn } from '@/lib/utils';
+import styles from './SignatureCanvas.module.css';
 
 interface SignatureCanvasProps {
   onSave: (signature: string) => void;
@@ -15,24 +16,31 @@ export function SignatureCanvas({ onSave, className }: SignatureCanvasProps) {
   };
 
   const save = () => {
-    if (signaturePadRef.current?.isEmpty()) {
+    const signaturePad = signaturePadRef.current;
+    if (!signaturePad) return;
+
+    if (signaturePad.isEmpty()) {
       alert('Please provide a signature');
       return;
     }
-    const dataUrl = signaturePadRef.current?.getTrimmedCanvas().toDataURL('image/png');
-    if (dataUrl) {
+
+    try {
+      const trimmedCanvas = signaturePad.getTrimmedCanvas();
+      const dataUrl = trimmedCanvas.toDataURL('image/png');
       onSave(dataUrl);
+    } catch (error) {
+      console.error('Error saving signature:', error);
+      alert('Error saving signature. Please try again.');
     }
   };
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
-      <div className="border rounded-lg p-4 bg-white">
+      <div className={styles.signatureContainer}>
         <SignaturePad
           ref={signaturePadRef}
           canvasProps={{
-            className: "w-full h-[200px] border rounded-lg",
-            style: { width: '100%', height: '200px' }
+            className: styles.signaturePad
           }}
         />
       </div>
