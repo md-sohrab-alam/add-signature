@@ -1,11 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
-  basePath: '/add-signature',
+  basePath: '',
   images: {
     unoptimized: true,
   },
-  assetPrefix: '/add-signature/',
+  assetPrefix: '',
   trailingSlash: true,
   distDir: 'out',
   // Fix CSS loading in production

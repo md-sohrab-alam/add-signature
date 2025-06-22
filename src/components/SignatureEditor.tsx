@@ -388,7 +388,6 @@ export function SignatureEditor({ onSave, className }: SignatureEditorProps) {
                 dotSize={2}
                 minWidth={1.5}
                 maxWidth={3}
-                throttle={16}
                 velocityFilterWeight={0.7}
               />
             </div>

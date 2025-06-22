@@ -1,7 +1,25 @@
 {
   "name": "add-signature",
   "version": "1.0.0",
+  "description": "A modern digital signature application for adding signatures and text to PDF documents and images",
   "private": true,
+  "homepage": "https://flexisign.net",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/md-sohrab-alam/add-signature.git"
+  },
+  "keywords": [
+    "digital-signature",
+    "pdf-editor",
+    "signature-app",
+    "document-signing",
+    "nextjs",
+    "typescript",
+    "tailwindcss",
+    "flexisign"
+  ],
+  "author": "md-sohrab-alam",
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

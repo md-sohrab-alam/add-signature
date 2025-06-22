@@ -8,6 +8,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { cn } from '@/lib/utils';
 import { Rnd } from 'react-rnd';
+import { trackFileUpload, trackSignatureCreation, trackTextAddition, trackDocumentDownload } from '@/lib/analytics';
 
 // Set worker for react-pdf
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -267,6 +268,8 @@ export default function Home() {
       });
       setTextLayers(initialTextLayers);
     }
+
+    trackFileUpload(selectedFile.type, selectedFile.size);
   };
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
@@ -311,6 +314,8 @@ export default function Home() {
 
     setFields(prev => [...prev, newField]);
     setShowSignatureEditor(false);
+
+    trackSignatureCreation('custom_signature');
   };
 
   const addTextBox = () => {
@@ -341,6 +346,8 @@ export default function Home() {
     };
 
     setFields(prev => [...prev, newField]);
+
+    trackTextAddition();
   };
 
   const handleSaveDocument = async () => {
@@ -495,6 +502,8 @@ export default function Home() {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+
+        trackDocumentDownload(file.name);
       } else if (file.type.startsWith('image/')) {
         console.log('Starting image processing...');
         
@@ -639,6 +648,8 @@ export default function Home() {
           document.body.removeChild(link);
           URL.revokeObjectURL(url);
           console.log('Download complete');
+
+          trackDocumentDownload(file.name);
         } catch (error) {
           console.error('Error in final image creation:', error);
           throw error;
